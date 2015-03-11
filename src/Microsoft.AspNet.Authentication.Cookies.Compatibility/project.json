@@ -1,10 +1,14 @@
 {
     "version": "1.0.0-*",
-    "description": "ASP.NET middleware that enables an application to use cookie based authentication, similar to ASP.NET's forms authentication.",
+    "description": "A compatibility layer for sharing authentication tickets between Microsoft.Owin.Security.Cookies and Microsoft.AspNet.Authentication.Cookies.",
     "dependencies": {
-
+        "Microsoft.Framework.NotNullAttribute.Internal": { "type": "build", "version": "1.0.0-*" }
     },
     "frameworks": {
-        "dnx451": { }
+        "net451": {
+            "dependencies": {
+                "Microsoft.Owin.Security.Cookies": "3.0.1"
+            }
+        }
     }
 }

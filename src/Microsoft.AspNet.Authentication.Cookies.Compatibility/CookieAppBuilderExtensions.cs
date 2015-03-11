@@ -2,30 +2,32 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
-using Microsoft.AspNet.Authentication.Cookies;
-using Microsoft.Framework.OptionsModel;
+using Microsoft.AspNet.Authentication.Cookies.Compatibility;
+using Microsoft.Framework.Internal;
+using Microsoft.Owin.Security.Cookies;
+using Microsoft.Owin.Security.DataProtection;
 
-namespace Microsoft.AspNet.Builder
+namespace Owin
 {
-    /// <summary>
-    /// Extension methods provided by the cookies authentication middleware
-    /// </summary>
-    public static class CookieAppBuilderExtensions
+    public static class CookieAuthenticationExtensions
     {
-        /// <summary>
-        /// Adds a cookie-based authentication middleware to your web application pipeline.
-        /// </summary>
-        /// <param name="app">The IApplicationBuilder passed to your configuration method</param>
-        /// <param name="configureOptions">Used to configure the options for the middleware</param>
-        /// <param name="optionsName">The name of the options class that controls the middleware behavior, null will use the default options</param>
-        /// <returns>The original app parameter</returns>
-        public static IApplicationBuilder UseCookieAuthentication([NotNull] this IApplicationBuilder app, Action<CookieAuthenticationOptions> configureOptions = null, string optionsName = "")
+        public static IAppBuilder UseCookieAuthentication(
+            [NotNull] this IAppBuilder app,
+            [NotNull] CookieAuthenticationOptions options,
+            PipelineStage stage = PipelineStage.Authenticate,
+            bool createShareableTickets = false)
         {
-            return app.UseMiddleware<CookieAuthenticationMiddleware>(
-                new ConfigureOptions<CookieAuthenticationOptions>(configureOptions ?? (o => { }))
-                {
-                    Name = optionsName
-                });
+            // If we're asked to create shareable tickets, then we need to inject our own ticket formatter
+            // that's compatible with ASP.NET 5.
+            if (createShareableTickets)
+            {
+                IDataProtector dataProtector = app.CreateDataProtector(
+                    "Microsoft.AspNet.Authentication.Cookies.CookieAuthenticationMiddleware", // full name of the ASP.NET 5 type
+                    options.AuthenticationType, "v2");
+                options.TicketDataFormat = new AspNet5TicketDataFormat(dataProtector, options.AuthenticationType);
+            }
+
+            return app.UseCookieAuthentication(options, stage);
         }
     }
 }
